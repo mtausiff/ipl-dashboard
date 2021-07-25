@@ -1,0 +1,82 @@
+Followed steps to build IPL dashboard Application
+1. Downloaded dataset files from Kaggle site
+2. Build user experience UIs pages based upon data available
+3. Look for technologies or tools to be use to build application based upon requirement
+4. Created a new Spring boot application with Maven
+    A. Select java version as jdk11
+    B. Added dependencies such as HSQL,Spring Batch,Springboot Devtools,Spring Web,Spring data JPA
+    C. Provide other necessary info such as groupId,artifactId,package
+    C. Run Application and did basic app verification
+5. Keep downloaded dataset csv file to application/src/main/resources folder. Make sure to remove first row from csv file.
+
+6. Load csv data to Database by following below steps
+i. Do Google search to look for examples - To load csv data to database using spring batch official link-https://spring.io/guides/gs/batch-processing/
+ii. Create a new Input class 'MatchInput.java' having csv header as class fields. Define all fields as String data type and generate their setter getter
+iii. Create a new Model class 'Match.java'
+    A. Define fields (which will be display over front end) as class fields.
+    B. Generate setter getter for all these fields
+    C. Annotate Class as @Entity and id field as @Id
+iv. Create a Data Processor class.In our example it is MatchDataProcessor.Take help from official link-https://spring.io/guides/gs/batch-processing/
+    A. Inside process method of Data Processor class, define mapping between Input data (i.e. MatchInput.java) and output model (i.e. Match.java)
+v. As suggested over official link https://spring.io/guides/gs/batch-processing/, create a BatchConfigurtaion class file and define reader(),writer(),processor() methods.
+    A. Inside reader() method, define MatchInput class, data csv file name.
+    B. For processor() method, Simply return the new object of customized processor from processor() method
+    C. Inside writer() method, Update the SQL query and return object of Match class type
+vi. Update two other methods importUserJob(), step1() to BatchConfigurtaion class. Take ref from official link https://spring.io/guides/gs/batch-processing/.
+    A. Simply import the necessary classes
+    B. Create a new class 'JobCompletionNotificationListener' which is required for step1() method
+    C. Inside JobCompletionNotificationListener class, make changes to afterJob() method [this is optional]
+vii. Run Application to verify data ingestion from csv to database through Spring batch. On Application startup you can see status: [COMPLETED] in console
+
+Faced Issues during loading csv data to DB
+-------------------------------------------
+Error:bad SQL grammar
+Solution: Check and correct the SQL syntax error in reader() method of BatchConfigurtaion class
+Error:Date Format Issue
+Solution:Date format must be yyyy-mm-dd. Update it accordingly
+Error: Double quote issue in data
+Solution:Open data file as excel, do copy paste to file opened inside IDE editor
+
+7. For IPL Dashboard, Prepare additional Team data using JPQL by following below steps
+    A.Create a class Team.java
+    B.Inside Team class, Define fields - Id, totalMatches, totalWins
+    C.Annotate the Team class as @Entity and id as @Id, @GeneratedValue(strategy = GenerationType.AUTO)
+    D.Inside Team class, Define one constructor with fields and another constructor without fields
+    E.Inside Team class, Generate setter getter for class fields
+    E.Inside JobCompletionNotificationListener class,
+        i) Replace JdbcTemplate with EntityManage to use JPQL,
+        ii) Annotate afterJob() method with @Transactional,
+        iii) In afterJob() method, Write logic to populate a Map of team name,totalMatches,TotalWins
+        iv) Output will be like- for each Team{teamName='Chennai Super Kings', totalMatches=178, totalWins=106}
+
+Faced Issues during defining additional team data
+-------------------------------------------------
+ERROR: org.hibernate.hql.internal.ast.QuerySyntaxException: match is not mapped
+SOLUTION: Keep first letter of table name as capital
+ERROR:org.hibernate.QueryException: could not resolve property: TEAM1
+SOLUTION: Keep fields in small case, same as fields defined inside class
+ERROR: javax.persistence.EntityExistsException-A different object with the same identifier value was already associated with the session
+SOLUTION: Annotate id field of team class with @
+
+8. For IPL Dashboard, Building the Team Info REST API by following below steps
+API.1=> Get basic Team information by team Name
+    A.Create a TeamRepository interface extending CrudRepository to interact with DB using JPA
+    B.Inside TeamRepository, define methods as per your requirement - findByTeamName(String teamName)
+    C.Create a controller class TeamController.java
+    D.Annotate TeamController with @RestController
+    E.Inside TeamController class, define teamRepository field and generate parameterized constructor
+    F.Inside TeamController class, define methods as per your requirement such as- getTeamInfoByTeamName(). Annotate getTeamInfoByTeamName() method and write logic to populate data with the help of teamRepository
+    G.Restart Application and verify REST API in Postman
+API.2=> Get Matches information by team Name order by Date and with pagination and Concatenate the response with the response of API.1
+    A.Define a new field 'matches' inside Team class, Generate setter getter for it and Annotate this field with @Transient[to tell JPA dont consider this field as DB table column]
+    B.Create a MatchRepository interface extending CrudRepository to interact with DB using JPA
+    C.Inside MatchRepository, define methods as per your requirement - getByTeam1OrTeamOrderByDateDesc(String team1, String team2)
+    D.Inside TeamController class, define matchRepository field, update parameterized constructor
+    E.Update logic inside request method - getTeamInfoByTeamName() as per your requirement.
+    F.Restart Application and verify REST API in Postman
+
+9.Commit all changes made so far to GIT repo
+
+
+
+
